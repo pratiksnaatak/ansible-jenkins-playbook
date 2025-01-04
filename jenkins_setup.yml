@@ -1,0 +1,52 @@
+---
+- name: Install and Configure Jenkins on Ubuntu 22.04
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Install prerequisites
+      apt:
+        name:
+          - wget
+          - gnupg
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    - name: Add Jenkins GPG key
+      shell: |
+        wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.asc
+      args:
+        creates: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins repository
+      shell: |
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
+      args:
+        creates: /etc/apt/sources.list.d/jenkins.list
+
+    - name: Update APT package cache
+      apt:
+        update_cache: yes
+
+    - name: Install Java
+      apt:
+        name: openjdk-17-jre
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Enable and start Jenkins service
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+
+    - name: Check Jenkins service status
+      systemd:
+        name: jenkins
+        state: started
+      register: jenkins_status
